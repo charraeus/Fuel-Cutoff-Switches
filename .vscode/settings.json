@@ -1,0 +1,9 @@
+{
+    "editor.wordWrap": "bounded",
+    "[markdown]": {
+        "editor.wordWrapColumn": 110
+    },
+    "editor.wordWrapColumn": 110,
+    "workbench.editor.wrapTabs": true,
+    "html.format.wrapLineLength": 110
+}

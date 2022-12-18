@@ -47,6 +47,9 @@
  *  @todo 3. Diese \.ino-Datei übersetzen und auf den Leonardo aufspielen und testen.
  *  @todo 4. Dann erst mit der Softwareänderung beginnen.
  * 
+ *  ## weitere Infos
+ *  * Used Joystick-Library: https://github.com/MHeironimus/ArduinoJoystickLibrary
+ * 
  *  ## Originaler Datei-Header der .ino-Datei
  *  modified sketch  
  *  by Matthew Heironimus  

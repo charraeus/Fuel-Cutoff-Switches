@@ -1,4 +1,4 @@
-@todo Supplement this README-file.
+@tableofcontents
 
 ## Current Status
 
@@ -28,3 +28,44 @@ The Leonardo operates two buttons per Fuel Selector Switch towards Windows / X-P
 **Additionally:**
 * Joystick button is pressed --> the Arduino sets BTN5 or BTN6 to "inactive".
 * Joystick button is released --> the Arduino sets BTN5 or BTN6 to "active".
+
+## Dependencies
+
+### Libraries
+
+1. **Arduino Joystick Library** by Matthew Heironimus
+   * available on [Github][1]
+2. **DynamicHID library** by Arduino LLC, modified by Matthew Heironimus
+   * included in 1.
+3. **Hardware**: Fuel Selector Switches connected to Leonardo:
+   * Fuel Selector Switch 1 --> Leonardo Pin 2 ==> Button 3
+   * Fuel Selector Switch 2 --> Leonardo Pin 3 ==> Button 4
+   @todo to be verified
+
+[1]: https://github.com/MHeironimus/ArduinoJoystickLibrary "Joystick Library by MHeironimus on Github"
+
+### Installation of Libraries for PlatformIO
+
+See [here][2].
+
+#### Depend on it
+
+* Open *platformio.ini*, a project configuration file located in the root of PlatformIO project.
+* Add the following line to the lib_deps option of [env:] section:  
+`mheironimus/Joystick@^2.1.1`
+* Build a project, PlatformIO will automatically install dependencies.
+
+#### Include it
+
+* Joystick library provides the following header files that can be included in your project:  
+  DynamicHID.hJoystick.h  
+  `#include <DynamicHID.h>`
+
+#### Command Line Interface (alternative to "Depend on it")
+
+* Open PlatformIO Core CLI
+* Change directory (cd) to the PlatformIO project where platformio.ini is located.
+* Copy the following pio pkg install command and paste into the CLI shell, press Enter:
+`pio pkg install --library "mheironimus/Joystick@^2.1.1"`
+
+[2]: https://registry.platformio.org/libraries/mheironimus/Joystick/installation "PlatformIO - Library Installation"

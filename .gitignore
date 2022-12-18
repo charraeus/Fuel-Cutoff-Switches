@@ -14,9 +14,3 @@ doc/*
 # Spezifische Dateien
 .DS_Store
 *.vpp.bak*
-
-# für Libraries
-*.zip
-examples/
-lib**/CONTRIBUTING**
-.github**

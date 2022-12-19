@@ -3,7 +3,7 @@
  * @author Christian Harraeus (christian@harraeus.de)
  * @author Matthew Heironimus (Arduino Joystick Library, Dynamic HID)
  * 
- * @version 0.2
+ * @version 0.3
  * @date 2022-12-18
  * 
  * @brief Main program.
@@ -24,10 +24,14 @@
  *  3. Do not expose any axis'.
  *  4. Do not expose any hat switch.
  *  5. Switch the 4 joystick buttons according to the algorithm below.
- *     * **Fuel Selector Switch #1** is set to *on*: show **joystick button 0 as pressed**, otherwise as depressed,
- *     * **Fuel Selector Switch #1** is set to *off*: show **joystick button 1 as pressed**, otherwise as depressed,
- *     * **Fuel Selector Switch #2** is set to *on*: show **joystick button 2 as pressed**, otherwise as depressed,
- *     * **Fuel Selector Switch #2** is set to *off*: show **joystick button 3 as pressed**, otherwise as depressed.
+ *     * **Fuel Selector Switch #1** is set to *on*: show **joystick button 0 as pressed**,
+ *       otherwise as depressed,
+ *     * **Fuel Selector Switch #1** is set to *off*: show **joystick button 1 as pressed**,
+ *       otherwise as depressed,
+ *     * **Fuel Selector Switch #2** is set to *on*: show **joystick button 2 as pressed**,
+ *       otherwise as depressed,
+ *     * **Fuel Selector Switch #2** is set to *off*: show **joystick button 3 as pressed**,
+ *       otherwise as depressed.
  *  6. The board in use is @em Sparkfun Micro Pro which is compatible to the Arduino Leonardo.
  *  7. Works with all (flight) simulators which can detect a joystick.
  * 
@@ -88,106 +92,209 @@ const int SELECTOR_SWITCH_2_PIN = 2;            ///< Fuel Selector Switch 2 is c
 const uint8_t SELECTOR_SWITCH_2_ON_BUTTON = 2;  ///< Button number to trigger when Switch 2 is set to on
 const uint8_t SELECTOR_SWITCH_2_OFF_BUTTON = 3; ///< Button number to trigger when Switch 2 is set to off
 
-/// @brief Array of pin numbers to which switches are connected.
-/// @note PINS must be filled with pin numbers in ascending order
-const int PIN_COUNT = 2;                    ///< Number of active pins
-const int PINS[PIN_COUNT] = { SELECTOR_SWITCH_2_PIN,
-                              SELECTOR_SWITCH_1_PIN, 
-                            };   ///< Pin numbers to which switches are connected
+/***************************************************************************************************
+ * @brief Pin-object - Holds all necessary data and provides the functionality.
+ * 
+ */
+class ArduinoPin {
+public:
+    ArduinoPin(const uint8_t pin, 
+            const uint8_t joystickOnButton, 
+            const uint8_t joystickOffButton);  ///< Constructor
+    uint8_t readSwitchPosition();         ///< Read the switch position connected to this pin
+    void setState(const uint8_t newState);  ///< Set new pin state
+    uint8_t getState();                   ///< Returns the current pin state
+    uint8_t getOnButtonNumber();          ///< Returns the number of the joystick button to set for switch on
+    uint8_t getOffButtonNumber();         ///< Returns the number of the joystick button to set for switch off
+    bool isChanged();                     ///< Returns @em true if pin state has changed, otherwise @em false
 
-/// @brief Array of last states of the pins.
-uint8_t lastPinState[PIN_COUNT] = {0, 0};
+private:
+    uint8_t pin;                            ///< Arduino pin to which a fuel selector switch is connected
+    uint8_t currentState;                   ///< Current state (on, off) of the Arduino pin (hardware)
+    uint8_t lastState;                      ///< Previous state (on, off) of the Arduino pin (hardware)
+    unsigned long lastChange;               ///< Timestamp of last state change
+    uint8_t joystickOnButton;               ///< Joystick button number to set when switch is set to on
+    uint8_t joystickOffButton;              ///< Joystick button number to set when switch is set to off
+    bool changed;                           ///< @em true if the pin state has changed, otherwise @em false
+    const unsigned long DEBOUNCE_TIME = 8;  ///< Time for debouncing the switch in milliseconds
+};
 
-/// @brief Initialise Joystick object: Show only 4 buttons.
-///
-/// Initialise with the following values:
-/// * JOYSTICK_DEFAULT_REPORT_ID, (defined in Joystick.h)
-/// * JOYSTICK_TYPE_JOYSTICK,  (defined in Joystick.h)
-/// * buttonCount = 4,
-/// * hatSwitchCount = 0,
-/// * includeXAxis = false,
-/// * includeYAxis = false,
-/// * includeZAxis = false,
-/// * includeRxAxis = false,
-/// * includeRyAxis = false,
-/// * includeRzAxis = false,
-/// * includeRudder = false,
-/// * includeThrottle = false,
-/// * includeAccelerator = false,
-/// * includeBrake = false,
-/// * includeSteering = false).
-Joystick_ Joystick = {
-                      JOYSTICK_DEFAULT_REPORT_ID,       // JOYSTICK_DEFAULT_REPORT_ID,
-                      JOYSTICK_TYPE_JOYSTICK,           // JOYSTICK_TYPE_JOYSTICK,
-                      PIN_COUNT * 2,    // buttonCount = 4,
-                      0,                // hatSwitchCount = 0,
-                      false,            // includeXAxis = false,
-                      false,            // includeYAxis = false,
-                      false,            // includeZAxis = false,
-                      false,            // includeRxAxis = false,
-                      false,            // includeRyAxis = false,
-                      false,            // includeRzAxis = false,
-                      false,            // includeRudder = false,
-                      false,            // includeThrottle = false,
-                      false,            // includeAccelerator = false,
-                      false,            // includeBrake = false,
-                      false             // includeSteering = false).
+/***************************************************************************************************
+ * Methods for pin object
+ **************************************************************************************************/
+
+/**
+ * @brief Construct a new ArduinoPin:: ArduinoPin object
+ * 
+ * @param pin 
+ * @param joystickOnButton 
+ * @param joystickOffButton 
+ */
+ArduinoPin::ArduinoPin(const uint8_t pin, 
+                       const uint8_t joystickOnButton, 
+                       const uint8_t joystickOffButton) {
+    this->pin = pin;
+    this->joystickOnButton = joystickOnButton;
+    this->joystickOffButton = joystickOffButton;
+    this->lastState = 0;
+    this->changed = true;
+    this->lastChange = millis();
+    pinMode(pin, INPUT_PULLUP);
+    setState(readSwitchPosition());
+}
+
+/**
+ * @brief Reads the state of the hardware Arduino pin.
+ * 
+ * @return uint8_t Value @em 1 is on, @em 0 is off
+ */
+uint8_t ArduinoPin::readSwitchPosition() {
+    return !digitalRead(pin);
+} 
+
+/**
+ * @brief Set the new state of the pin.
+ * 
+ * @param newState 
+ * 
+ * @todo: implement debouncing
+ */
+void ArduinoPin::setState(const uint8_t newState) {
+    if (newState != lastState) {
+        // new state for this pin detected
+        lastState = currentState;
+        currentState = newState;
+        lastChange = millis();
+        changed = true;
+    } else {
+        // no state change detected for this pin
+        changed = false;
+    }
+}
+
+inline uint8_t ArduinoPin::getState() {
+    return currentState;
+}
+
+inline bool ArduinoPin::isChanged() {
+    return changed;
+}
+
+inline uint8_t ArduinoPin::getOnButtonNumber() {
+    return joystickOnButton;
+}
+
+inline uint8_t ArduinoPin::getOffButtonNumber() {
+    return joystickOffButton;
+}
+
+/***************************************************************************************************
+ * @brief Array with all pin with connected switches.
+ * 
+ */
+ArduinoPin arduinoPins[] = {
+                             {
+                                SELECTOR_SWITCH_1_PIN, 
+                                SELECTOR_SWITCH_1_ON_BUTTON, 
+                                SELECTOR_SWITCH_1_OFF_BUTTON
+                             },
+                             { 
+                                SELECTOR_SWITCH_2_PIN,
+                                SELECTOR_SWITCH_2_ON_BUTTON, 
+                                SELECTOR_SWITCH_2_OFF_BUTTON
+                             }
 };
 
 
-/// @brief Setup of @em Arduino @em Leonardo / @em Sparkfun @em Micro @em Pro
-void setup() {
-    /// Initialize Arduino pins
-    for (const auto &pin : PINS) {
-        pinMode(pin, INPUT_PULLUP);
-    }
+/***************************************************************************************************
+ * @brief Initialise Joystick object: Show only 4 buttons and no axis.
+ * 
+ *  Initialise with the following values:
+ *  * JOYSTICK_DEFAULT_REPORT_ID, (defined in Joystick.h)
+ *  * JOYSTICK_TYPE_JOYSTICK,  (defined in Joystick.h)
+ *  * buttonCount = 4,
+ *  * hatSwitchCount = 0,
+ *  * includeXAxis = false,
+ *  * includeYAxis = false,
+ *  * includeZAxis = false,
+ *  * includeRxAxis = false,
+ *  * includeRyAxis = false,
+ *  * includeRzAxis = false,
+ *  * includeRudder = false,
+ *  * includeThrottle = false,
+ *  * includeAccelerator = false,
+ *  * includeBrake = false,
+ *  * includeSteering = false).
+ */
+Joystick_ joystick = {
+            JOYSTICK_DEFAULT_REPORT_ID, // JOYSTICK_DEFAULT_REPORT_ID,
+            JOYSTICK_TYPE_JOYSTICK,     // JOYSTICK_TYPE_JOYSTICK,
+            // buttonCount = 4: per pin two joystick buttons
+            static_cast<uint8_t>(sizeof(arduinoPins)/sizeof(arduinoPins[0]) * 2),
+            0,                // hatSwitchCount = 0,
+            false,            // includeXAxis = false,
+            false,            // includeYAxis = false,
+            false,            // includeZAxis = false,
+            false,            // includeRxAxis = false,
+            false,            // includeRyAxis = false,
+            false,            // includeRzAxis = false,
+            false,            // includeRudder = false,
+            false,            // includeThrottle = false,
+            false,            // includeAccelerator = false,
+            false,            // includeBrake = false,
+            false             // includeSteering = false).
+};
 
-    /// Initialize Joystick Library
-    Joystick.begin();
+
+/***************************************************************************************************
+ * @brief Set joystick buttons according to the fuel selector switch positions.
+ * 
+ * @param pin Pin-object
+ */
+void setJoystickButtons(ArduinoPin &pin) {
+    uint8_t newState = pin.getState();
+    if (newState == 1) {
+         // newState is 1 ==> fuel switch is set to up position (on)
+        joystick.setButton(pin.getOffButtonNumber(), 0);
+        joystick.setButton(pin.getOnButtonNumber(), newState);
+    } else {
+        // newState is 0 ==> fuel switch is set to down position (off)
+        joystick.setButton(pin.getOnButtonNumber(), newState);
+        joystick.setButton(pin.getOffButtonNumber(), 1);
+    }
 }
 
-/// @brief Endless loop of @em Arduino @em Leonardo / @em Sparkfun @em Micro @em Pro.
-/// 
-/// Read state (on, off) for all defined pins and
-/// set the joystick buttons accordingly
+
+/***************************************************************************************************
+ * @brief Setup of @em Arduino @em Leonardo / @em Sparkfun @em Micro @em Pro
+ * 
+ */
+void setup() {
+    /// Initialize Joystick Library
+    joystick.begin();
+    
+    /// Initialise joystick buttons
+    for (auto &pin : arduinoPins) {
+        /// read the pin status
+        setJoystickButtons(pin);
+    }
+}
+
+
+/***************************************************************************************************
+ * @brief Endless loop of @em Arduino @em Leonardo / @em Sparkfun @em Micro @em Pro.
+ * 
+ * Read state (on, off) for all defined pins and
+ * set the joystick buttons accordingly
+ */
 void loop() {
     /// repeat for all defined pins
-    for (const auto &pin : PINS) {
+    for (auto &pin : arduinoPins) {
         /// read the pin status
-        int currentPinState = !digitalRead(PINS[pin - PIN_COUNT]);
-        /// Memorize the pin status in @em lastPinState and
-        /// set the joystick buttons
-        if (currentPinState != lastPinState[pin - PIN_COUNT]) {
-            lastPinState[pin - PIN_COUNT] = currentPinState;
-            switch (pin) {
-                case SELECTOR_SWITCH_1_PIN: {
-                    if (currentPinState == 1) {
-                        // Switch #1 is set to on (up position)
-                        Joystick.setButton(SELECTOR_SWITCH_1_OFF_BUTTON, 0);
-                        Joystick.setButton(SELECTOR_SWITCH_1_ON_BUTTON, 1);
-                    } else {
-                        // Switch #1 is set to off (down position)
-                        Joystick.setButton(SELECTOR_SWITCH_1_ON_BUTTON, 0);
-                        Joystick.setButton(SELECTOR_SWITCH_1_OFF_BUTTON, 1);
-                    }
-                    break;
-                }
-                case SELECTOR_SWITCH_2_PIN: {
-                    if (currentPinState == 1) {
-                        // Switch #2 is set to on (up position)
-                        Joystick.setButton(SELECTOR_SWITCH_2_OFF_BUTTON, 0);
-                        Joystick.setButton(SELECTOR_SWITCH_2_ON_BUTTON, 1);
-                    } else {
-                        // Switch #2 is set to off (down position)
-                        Joystick.setButton(SELECTOR_SWITCH_2_ON_BUTTON, 0);
-                        Joystick.setButton(SELECTOR_SWITCH_2_OFF_BUTTON, 1);
-                    }
-                    break;
-                }
-                default: {
-                    ; // this should never happen
-                }
-            }
+        pin.setState(pin.readSwitchPosition());
+        if (pin.isChanged()) {
+            // change the status of the joystick buttons
+            setJoystickButtons(pin);
         }
     }
 

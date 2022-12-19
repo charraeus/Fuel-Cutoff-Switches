@@ -10,6 +10,10 @@ The Arduino Leonardo is recognised by the PC operation system as a game controll
 *Arduino Leonardo*. Connected to this Leonardo are two "buttons" which are actuated by the two Fuel 
 Selector Switches.
 
+In the image below both Fuel Selector Switches are set to *off*.  
+
+![Controller Properties](./Fuel-Selector-Properties.png "Properties Window in Windows 10")
+
 [shop]: https://www.etsy.com/de/shop/Homecockpit?utm_source=transactional&utm_medium=email&utm_campaign=convo_notifications_010170_10683759063_0_0&campaign_label=convo_notifications&utm_content=&email_sent=1670917211&euid=krvzIIx63gGeMLYBZhJNqdGjoi3j&eaid=1118096026825&x_eaid=94976db736
 
 ## Features
@@ -23,6 +27,8 @@ Selector Switches.
    * **Fuel Selector Switch #1** is set to *off*: show **joystick button 1 as pressed**, otherwise as depressed,
    * **Fuel Selector Switch #2** is set to *on*: show **joystick button 2 as pressed**, otherwise as depressed,
    * **Fuel Selector Switch #2** is set to *off*: show **joystick button 3 as pressed**, otherwise as depressed.
+   > Note: The internal joystick button count starts at zero (0), but in the Windows properties
+   > window the count starts with 1.
 6. The board in use is @em Sparkfun Micro Pro which is compatible to the Arduino Leonardo.
 7. Works with all (flight) simulators which can detect a joystick.
 
@@ -39,7 +45,7 @@ Selector Switches.
   2. the Arduino sets the joystick button, which indicates the off-position of the switch 
      to *pressed/active/on*.
 
-## Wireing
+## Wiring
 
 1. **Fuel Selector Switch #1** is connected to **Arduino Pin 3** of Micro Pro board.
 2. **Fuel Selector Switch #2** is connected to **Arduino Pin 2** of Micro Pro board. 

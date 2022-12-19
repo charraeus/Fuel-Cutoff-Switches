@@ -30,8 +30,10 @@
  *     * **Fuel Selector Switch #2** is set to *off*: show **joystick button 3 as pressed**, otherwise as depressed.
  *  6. The board in use is @em Sparkfun Micro Pro which is compatible to the Arduino Leonardo.
  *  7. Works with all (flight) simulators which can detect a joystick.
+ * 
+ * ![Controller Properties](./Fuel-Selector-Properties.png "Properties Window in Windows 10")
  *  
- *  ## Wireing
+ *  ## Wiring
  *  
  *  1. **Fuel Selector Switch #1** is connected to **Arduino Pin 3** of Micro Pro board.
  *  2. **Fuel Selector Switch #2** is connected to **Arduino Pin 2** of Micro Pro board. 

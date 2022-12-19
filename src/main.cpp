@@ -32,6 +32,8 @@
  *  7. Works with all (flight) simulators which can detect a joystick.
  * 
  * ![Controller Properties](./Fuel-Selector-Properties.png "Properties Window in Windows 10")
+ *  > Note: The internal joystick button count starts at zero (0), but in the Windows properties
+ *  > window the count starts with 1.
  *  
  *  ## Wiring
  *  

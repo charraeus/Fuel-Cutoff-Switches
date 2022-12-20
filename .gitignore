@@ -10,6 +10,7 @@ obj
 # aber das Doxyfile mit versionieren
 doc/*
 !doc/Doxyfile*
+!doc/*.png
 
 # Spezifische Dateien
 .DS_Store

@@ -3,7 +3,7 @@
  * @author Christian Harraeus (christian@harraeus.de)
  * @author Matthew Heironimus (Arduino Joystick Library, Dynamic HID)
  * 
- * @version 1.0
+ * @version 1.1.1
  * @date 2022-12-20
  * 
  * @brief Main program.
@@ -80,6 +80,46 @@
  *  1. Joystick-Library: https://github.com/MHeironimus/ArduinoJoystickLibrary
  *  2. DynamicHID-Library: included in 1. 
  * 
+ *  ## How to expand for more than 2 switches? {#expand}
+ * 
+ *  1. Locate the line of code 
+ *     @code
+ *     ArduinoPin arduinoPins[] = {
+ *     @endcode 
+ *     which should be around line 235.
+ *  2. This is the array which contains all pins that are connected to a switch (e.g. to a
+ *     fuel selector switch).
+ *  3. To add an additional switch you have to add another element to this array, like
+ *      @code{.unparsed}
+ *      { 
+ *          <pin number of the Arduino pinnto which the switch is connected>,
+ *          <joystick button that shall be triggered when the switch is set to on>, 
+ *          <joystick button that shall be triggered when the switch is set to off>
+ *      }
+ *      @endcode 
+ *      e.g.
+ *      @code
+ *      { 4, 10, 11 }
+ *      @endcode
+ *      The whole statement then should look like this:
+ *      @code{.c++}
+ *      ArduinoPin arduinoPins[] = {
+ *                                   {
+ *                                      SELECTOR_SWITCH_1_PIN, 
+ *                                      SELECTOR_SWITCH_1_ON_BUTTON, 
+ *                                      SELECTOR_SWITCH_1_OFF_BUTTON
+ *                                   },
+ *                                   { 
+ *                                      SELECTOR_SWITCH_2_PIN,
+ *                                      SELECTOR_SWITCH_2_ON_BUTTON, 
+ *                                      SELECTOR_SWITCH_2_OFF_BUTTON
+ *                                   },
+ *                                   { 4, 10, 11 }
+ *      };
+ *      @endcode
+ *  That's all what have to be changed. Off course symbolic constants can be used instead
+ *  of literals.
+ * 
  **************************************************************************************************/
 
 
@@ -87,12 +127,12 @@
 #include <Joystick.h>
 
 // @brief  Constants for fuel selector switch #1
-const int SELECTOR_SWITCH_1_PIN = 3;            ///< Fuel Selector Switch 1 is connected to pin 3
+const int SELECTOR_SWITCH_1_PIN = 3;            ///< Fuel Selector Switch 1 is connected to Arduino pin 3
 const uint8_t SELECTOR_SWITCH_1_ON_BUTTON = 0;  ///< Button number to trigger when Switch 1 is set to on
 const uint8_t SELECTOR_SWITCH_1_OFF_BUTTON = 1; ///< Button number to trigger when Switch 1 is set to off
 
 // @brief Constants for fuel selector switch #2
-const int SELECTOR_SWITCH_2_PIN = 2;            ///< Fuel Selector Switch 2 is connected to pin 2
+const int SELECTOR_SWITCH_2_PIN = 2;            ///< Fuel Selector Switch 2 is connected to Arduino pin 2
 const uint8_t SELECTOR_SWITCH_2_ON_BUTTON = 2;  ///< Button number to trigger when Switch 2 is set to on
 const uint8_t SELECTOR_SWITCH_2_OFF_BUTTON = 3; ///< Button number to trigger when Switch 2 is set to off
 
@@ -112,10 +152,10 @@ public:
 
 private:
     uint8_t pin;                            ///< Arduino pin to which a fuel selector switch is connected
-    uint8_t currentState;                   ///< Current state (on, off) of the Arduino pin (hardware)
-    uint8_t lastState;                      ///< Previous state (on, off) of the Arduino pin (hardware)
-    uint8_t joystickOnButton;               ///< Joystick button number to set when switch is set to on
-    uint8_t joystickOffButton;              ///< Joystick button number to set when switch is set to off
+    uint8_t currentState;                   ///< Current state (on=1, off=0) of the Arduino pin (hardware)
+    uint8_t lastState;                      ///< Previous state (on=1, off=0) of the Arduino pin (hardware)
+    uint8_t joystickOnButton;               ///< Joystick button number to be set when switch is set to on
+    uint8_t joystickOffButton;              ///< Joystick button number to be set when switch is set to off
     bool changed;                           ///< @em true if the pin state has changed, otherwise @em false
     const unsigned long DEBOUNCE_TIME = 8;  ///< Time for debouncing the switch in milliseconds
     unsigned long stateChangeTime;          ///< Time when the pin last changed state
@@ -128,11 +168,11 @@ private:
 /**
  * @brief Construct a new ArduinoPin:: ArduinoPin object
  * 
- * @param pin 
- * @param joystickOnButton 
- * @param joystickOffButton 
+ * @param pin               The Arduino pin number 
+ * @param joystickOnButton  The number of the joystick button to be set when switch is set to on
+ * @param joystickOffButton The number of the joystick button to be set when switch is set to off
  */
-ArduinoPin::ArduinoPin(const uint8_t pin, 
+ArduinoPin::ArduinoPin(const uint8_t pin,
                        const uint8_t joystickOnButton, 
                        const uint8_t joystickOffButton) {
     this->pin = pin;
@@ -157,7 +197,8 @@ uint8_t ArduinoPin::readSwitchPosition() const {
 /**
  * @brief Debounce and set the new state of the pin.
  * 
- * @param newState 
+ * @param newState The new status to be set. This is normally returned 
+ *                 by the function readSwitchPosition().
  */
 void ArduinoPin::setState(const uint8_t newState) {
     if (newState != lastState) {
@@ -192,7 +233,14 @@ inline uint8_t ArduinoPin::getOffButtonNumber() const {
 }
 
 /***************************************************************************************************
- * @brief Array with all pin with connected switches.
+ * @brief Array with all pins that have switches connected to.
+ * 
+ * Initialise the array with ArduinoPin objects which are themselves initialised with
+ * * Number of Arduino pin to which a switch is connected,
+ * * Number of joystick button to be set when switch is set to on (pin state goes low)
+ * * Number of joystick button to be set when switch is set to off (pin state goes high)
+ * 
+ * @see Section [How to expand for more than 2 switches?](@ref expand) in this documentation.
  * 
  */
 ArduinoPin arduinoPins[] = {

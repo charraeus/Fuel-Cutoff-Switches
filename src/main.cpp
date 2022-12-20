@@ -57,7 +57,7 @@
  *  ### Fuel Selector Switch State Change
  *  
  *  if a Fuel Selector Switch position is changed then
- *      debounce new switch state (wait for max. 8 milliseconds until new state is stabilised);
+ *      debounce new switch state (wait for 8 milliseconds until new state is stabilised);
  *  endif
  *  
  *  **Fuel Selector Switch 1**  
@@ -102,15 +102,13 @@ const uint8_t SELECTOR_SWITCH_2_OFF_BUTTON = 3; ///< Button number to trigger wh
  */
 class ArduinoPin {
 public:
-    ArduinoPin(const uint8_t pin, 
-            const uint8_t joystickOnButton, 
-            const uint8_t joystickOffButton);  ///< Constructor
-    uint8_t readSwitchPosition();         ///< Read the switch position connected to this pin
-    void setState(const uint8_t newState);  ///< Set new pin state
-    uint8_t getState();                   ///< Returns the current pin state
-    uint8_t getOnButtonNumber();          ///< Returns the number of the joystick button to set for switch on
-    uint8_t getOffButtonNumber();         ///< Returns the number of the joystick button to set for switch off
-    bool isChanged();                     ///< Returns @em true if pin state has changed, otherwise @em false
+    ArduinoPin(uint8_t pin, uint8_t joystickOnButton, uint8_t joystickOffButton);  ///< Constructor
+    uint8_t readSwitchPosition() const;   ///< Read the switch position connected to this pin
+    void setState(uint8_t newState);      ///< Set new pin state
+    uint8_t getState() const;             ///< Returns the current pin state
+    uint8_t getOnButtonNumber() const;    ///< Returns the number of the joystick button to set for switch on
+    uint8_t getOffButtonNumber() const;   ///< Returns the number of the joystick button to set for switch off
+    bool isChanged() const;               ///< Returns @em true if pin state has changed, otherwise @em false
 
 private:
     uint8_t pin;                            ///< Arduino pin to which a fuel selector switch is connected
@@ -120,6 +118,7 @@ private:
     uint8_t joystickOffButton;              ///< Joystick button number to set when switch is set to off
     bool changed;                           ///< @em true if the pin state has changed, otherwise @em false
     const unsigned long DEBOUNCE_TIME = 8;  ///< Time for debouncing the switch in milliseconds
+    unsigned long stateChangeTime;          ///< Time when the pin last changed state
 };
 
 /***************************************************************************************************
@@ -141,6 +140,7 @@ ArduinoPin::ArduinoPin(const uint8_t pin,
     this->joystickOffButton = joystickOffButton;
     this->lastState = 0;
     this->changed = true;
+    this->stateChangeTime = millis();
     pinMode(pin, INPUT_PULLUP);
     setState(readSwitchPosition());
 }
@@ -150,42 +150,44 @@ ArduinoPin::ArduinoPin(const uint8_t pin,
  * 
  * @return uint8_t Value @em 1 is on, @em 0 is off
  */
-uint8_t ArduinoPin::readSwitchPosition() {
-    return !digitalRead(pin);
+uint8_t ArduinoPin::readSwitchPosition() const {
+    return static_cast<uint8_t>(! static_cast<bool>(digitalRead(pin)));
 } 
 
 /**
- * @brief Set the new state of the pin.
+ * @brief Debounce and set the new state of the pin.
  * 
  * @param newState 
- * 
- * @todo: implement debouncing
  */
 void ArduinoPin::setState(const uint8_t newState) {
     if (newState != lastState) {
         // new state for this pin detected
-        lastState = currentState;
-        currentState = newState;
-        changed = true;
+        // debounce the pin change
+        if (millis() - stateChangeTime >= DEBOUNCE_TIME) {
+            stateChangeTime = millis();     // when the pin state changes
+            lastState = currentState;       // remember for next time 
+            currentState = newState;
+            changed = true;
+        }
     } else {
         // no state change detected for this pin
         changed = false;
     }
 }
 
-inline uint8_t ArduinoPin::getState() {
+inline uint8_t ArduinoPin::getState() const {
     return currentState;
 }
 
-inline bool ArduinoPin::isChanged() {
+inline bool ArduinoPin::isChanged() const {
     return changed;
 }
 
-inline uint8_t ArduinoPin::getOnButtonNumber() {
+inline uint8_t ArduinoPin::getOnButtonNumber() const {
     return joystickOnButton;
 }
 
-inline uint8_t ArduinoPin::getOffButtonNumber() {
+inline uint8_t ArduinoPin::getOffButtonNumber() const {
     return joystickOffButton;
 }
 

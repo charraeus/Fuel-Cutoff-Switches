@@ -29,7 +29,7 @@ In the image below both Fuel Selector Switches are set to *off*.
    * **Fuel Selector Switch #2** is set to *off*: show **joystick button 3 as pressed**, otherwise as depressed.
    > Note: The internal joystick button count starts at zero (0), but in the Windows properties
    > window the count starts with 1.
-6. The board in use is @em Sparkfun Micro Pro which is compatible to the Arduino Leonardo.
+6. The board in use is a *Sparkfun Micro Pro* which is compatible to the Arduino Leonardo.
 7. Works with all (flight) simulators which can detect a joystick.
 
 ## Basic Algorithm

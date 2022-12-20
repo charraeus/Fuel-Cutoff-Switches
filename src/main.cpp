@@ -3,19 +3,23 @@
  * @author Christian Harraeus (christian@harraeus.de)
  * @author Matthew Heironimus (Arduino Joystick Library, Dynamic HID)
  * 
- * @version 0.3
- * @date 2022-12-18
+ * @version 1.0
+ * @date 2022-12-20
  * 
  * @brief Main program.
  * 
  * ## Introduction
  * 
- * The Arduino Leonardo is recognised by Windows as a game controller with the name "Arduino Leonardo". 
- * 
- * I got an .ino file from the seller of the fuel selector switches. The 
- * following address is an etsy address -- I don't have another one.  
- * Sinan has asked to be sent the new software version.  
- * Sinan <2_3c7aa44149d6c314fc53fb174d465ad073edbc46_1121328563999@convos.etsy.com>
+ *  The Fuel-Selector-Switches by Sinan's [Etsy-Shop][shop] are driven by an *Sparkfun Micro Pro* device 
+ *  which is compatible to an *Arduino Leonardo* device.  
+ *  The Arduino Leonardo is recognised by the PC operation system as a game controller with the name 
+ *  *Arduino Leonardo*. Connected to this Leonardo are two "buttons" which are actuated by the two Fuel 
+ *  Selector Switches.
+ *  
+ *  I got an .ino file from the seller of the fuel selector switches. The 
+ *  following address is an etsy address -- I don't have another one.  
+ *  Sinan has asked to be sent the new software version.  
+ *  Sinan <2_3c7aa44149d6c314fc53fb174d465ad073edbc46_1121328563999@convos.etsy.com>
  *  
  *  ## Features
  *  
@@ -112,7 +116,6 @@ private:
     uint8_t pin;                            ///< Arduino pin to which a fuel selector switch is connected
     uint8_t currentState;                   ///< Current state (on, off) of the Arduino pin (hardware)
     uint8_t lastState;                      ///< Previous state (on, off) of the Arduino pin (hardware)
-    unsigned long lastChange;               ///< Timestamp of last state change
     uint8_t joystickOnButton;               ///< Joystick button number to set when switch is set to on
     uint8_t joystickOffButton;              ///< Joystick button number to set when switch is set to off
     bool changed;                           ///< @em true if the pin state has changed, otherwise @em false
@@ -138,7 +141,6 @@ ArduinoPin::ArduinoPin(const uint8_t pin,
     this->joystickOffButton = joystickOffButton;
     this->lastState = 0;
     this->changed = true;
-    this->lastChange = millis();
     pinMode(pin, INPUT_PULLUP);
     setState(readSwitchPosition());
 }
@@ -164,7 +166,6 @@ void ArduinoPin::setState(const uint8_t newState) {
         // new state for this pin detected
         lastState = currentState;
         currentState = newState;
-        lastChange = millis();
         changed = true;
     } else {
         // no state change detected for this pin
@@ -275,7 +276,8 @@ void setup() {
     
     /// Initialise joystick buttons
     for (auto &pin : arduinoPins) {
-        /// read the pin status
+        /// set the joystick buttons according to the initial pin status.
+        /// the initial pin status is read in the pin-constructor.
         setJoystickButtons(pin);
     }
 }
@@ -290,10 +292,10 @@ void setup() {
 void loop() {
     /// repeat for all defined pins
     for (auto &pin : arduinoPins) {
-        /// read the pin status
+        /// read and set the pin status
         pin.setState(pin.readSwitchPosition());
         if (pin.isChanged()) {
-            // change the status of the joystick buttons
+            /// if pin status has changed change the status of the joystick buttons
             setJoystickButtons(pin);
         }
     }

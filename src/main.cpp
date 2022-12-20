@@ -3,7 +3,7 @@
  * @author Christian Harraeus (christian@harraeus.de)
  * @author Matthew Heironimus (Arduino Joystick Library, Dynamic HID)
  * 
- * @version 1.1.1
+ * @version 1.1.2
  * @date 2022-12-20
  * 
  * @brief Main program.
@@ -180,7 +180,7 @@ ArduinoPin::ArduinoPin(const uint8_t pin,
     this->joystickOffButton = joystickOffButton;
     this->lastState = 0;
     this->changed = true;
-    this->stateChangeTime = millis();
+    this->stateChangeTime = 0;
     pinMode(pin, INPUT_PULLUP);
     setState(readSwitchPosition());
 }

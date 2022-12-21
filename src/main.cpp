@@ -3,14 +3,14 @@
  * @author Christian Harraeus (christian@harraeus.de)
  * @author Matthew Heironimus (Arduino Joystick Library, Dynamic HID)
  * 
- * @version 1.1.2
- * @date 2022-12-20
+ * @version 1.1.3
+ * @date 2022-12-21
  * 
  * @brief Main program.
  * 
  * ## Introduction
  * 
- *  The Fuel-Selector-Switches by Sinan's [Etsy-Shop][shop] are driven by an *Sparkfun Micro Pro* device 
+ *  The Fuel-Selector-Switches by Sinan's [Etsy-Shop][shop] are driven by an *Sparkfun Pro Micro* device 
  *  which is compatible to an *Arduino Leonardo* device.  
  *  The Arduino Leonardo is recognised by the PC operation system as a game controller with the name 
  *  *Arduino Leonardo*. Connected to this Leonardo are two "buttons" which are actuated by the two Fuel 
@@ -36,18 +36,23 @@
  *       otherwise as depressed,
  *     * **Fuel Selector Switch #2** is set to *off*: show **joystick button 3 as pressed**,
  *       otherwise as depressed.
- *  6. The board in use is @em Sparkfun Micro Pro which is compatible to the Arduino Leonardo.
+ *  6. The board in use is <em>Sparkfun Pro Micro</em> which is compatible to the <em>Arduino Leonardo</em>.
  *  7. Works with all (flight) simulators which can detect a joystick.
  * 
  * ![Controller Properties](./Fuel-Selector-Properties.png "Properties Window in Windows 10")
- *  > Note: The internal joystick button count starts at zero (0), but in the Windows properties
- *  > window the count starts with 1.
+ *  > **Note:** The internal joystick button count starts at zero (0), but in the Windows properties
+ *  >       window the count starts with 1.
+ * 
+ *  > **Note:** Microsoft Windows does not recognise the pressed joystick button when the *Pro Micro* 
+ *          board is plugged into the USB port of the PC. To sync the pysical position of the switches
+ *          it is necessary to actuate one of the fuel selector switches. 
  *  
  *  ## Wiring
  *  
- *  1. **Fuel Selector Switch #1** is connected to **Arduino Pin 3** of Micro Pro board.
- *  2. **Fuel Selector Switch #2** is connected to **Arduino Pin 2** of Micro Pro board. 
- *  
+ *  1. **Fuel Selector Switch #1** -- green wire -- is connected to **Arduino Pin 3** of *Pro Micro* board.
+ *  2. **Fuel Selector Switch #2** -- black wire -- is connected to **Arduino Pin 2** of *Pro Micro* board. 
+ *  3. **GND** -- white wire -- is connected to **GND** Pin 4 of *Pro Micro Board*
+ * 
  *  ## Algorithm for Button-Setting
  *  
  *  ### Initialisation
@@ -143,6 +148,7 @@ const uint8_t SELECTOR_SWITCH_2_OFF_BUTTON = 3; ///< Button number to trigger wh
 class ArduinoPin {
 public:
     ArduinoPin(uint8_t pin, uint8_t joystickOnButton, uint8_t joystickOffButton);  ///< Constructor
+    void initHardware();                  ///< Initialise the hardware
     uint8_t readSwitchPosition() const;   ///< Read the switch position connected to this pin
     void setState(uint8_t newState);      ///< Set new pin state
     uint8_t getState() const;             ///< Returns the current pin state
@@ -151,14 +157,14 @@ public:
     bool isChanged() const;               ///< Returns @em true if pin state has changed, otherwise @em false
 
 private:
-    uint8_t pin;                            ///< Arduino pin to which a fuel selector switch is connected
-    uint8_t currentState;                   ///< Current state (on=1, off=0) of the Arduino pin (hardware)
-    uint8_t lastState;                      ///< Previous state (on=1, off=0) of the Arduino pin (hardware)
-    uint8_t joystickOnButton;               ///< Joystick button number to be set when switch is set to on
-    uint8_t joystickOffButton;              ///< Joystick button number to be set when switch is set to off
-    bool changed;                           ///< @em true if the pin state has changed, otherwise @em false
-    const unsigned long DEBOUNCE_TIME = 8;  ///< Time for debouncing the switch in milliseconds
+    uint8_t hwPin;                      ///< Arduino hardware pin to which a fuel selector switch is connected
+    uint8_t currentState;               ///< Current state (on=1, off=0) of the Arduino pin (hardware)
+    uint8_t lastState;                  ///< Previous state (on=1, off=0) of the Arduino pin (hardware)
+    uint8_t joystickOnButton;           ///< Joystick button number to be set when switch is set to on
+    uint8_t joystickOffButton;          ///< Joystick button number to be set when switch is set to off
+    bool changed;                       ///< @em true if the pin state has changed, otherwise @em false
     unsigned long stateChangeTime;          ///< Time when the pin last changed state
+    const unsigned long DEBOUNCE_TIME = 8;  ///< Time for debouncing the switch in milliseconds
 };
 
 /***************************************************************************************************
@@ -175,14 +181,21 @@ private:
 ArduinoPin::ArduinoPin(const uint8_t pin,
                        const uint8_t joystickOnButton, 
                        const uint8_t joystickOffButton) {
-    this->pin = pin;
+    this->hwPin = pin;
+    this->currentState = 0;
+    this->lastState = 255;        // 255 => indicator for setState() to always set the new status
     this->joystickOnButton = joystickOnButton;
-    this->joystickOffButton = joystickOffButton;
-    this->lastState = 0;
-    this->changed = true;
+    this->joystickOffButton = joystickOffButton;    
+    this->changed = false;
     this->stateChangeTime = 0;
-    pinMode(pin, INPUT_PULLUP);
-    setState(readSwitchPosition());
+}
+
+/**
+ * @brief Initialise the pin and set the initial state.
+ *        This must be called within the setup routine.
+ */
+void ArduinoPin::initHardware() {
+    pinMode(hwPin, INPUT_PULLUP);
 }
 
 /**
@@ -191,7 +204,7 @@ ArduinoPin::ArduinoPin(const uint8_t pin,
  * @return uint8_t Value @em 1 is on, @em 0 is off
  */
 uint8_t ArduinoPin::readSwitchPosition() const {
-    return static_cast<uint8_t>(! static_cast<bool>(digitalRead(pin)));
+    return static_cast<uint8_t>(! static_cast<bool>(digitalRead(hwPin)));
 } 
 
 /**
@@ -201,7 +214,9 @@ uint8_t ArduinoPin::readSwitchPosition() const {
  *                 by the function readSwitchPosition().
  */
 void ArduinoPin::setState(const uint8_t newState) {
-    if (newState != lastState) {
+    // if state of pin changes (from on to off) or from (off to on)
+    // or first run (lastState=255)
+    if ((newState != lastState) || (lastState == 255)) {
         // new state for this pin detected
         // debounce the pin change
         if (millis() - stateChangeTime >= DEBOUNCE_TIME) {
@@ -317,24 +332,33 @@ void setJoystickButtons(ArduinoPin &pin) {
 
 
 /***************************************************************************************************
- * @brief Setup of @em Arduino @em Leonardo / @em Sparkfun @em Micro @em Pro
+ * @brief Setup of <em>Arduino Leonardo</em> / @em Sparkfun <em>Pro Micro</em>
  * 
  */
 void setup() {
+    #ifdef DEBUG
+    #define _SERIAL_BAUDRATE 115200     /// NOLINT Baudrate für den seriellen Port. Nur hier ändern!!
+    // Serielle Schnittstelle initialisieren
+    Serial.begin(_SERIAL_BAUDRATE, SERIAL_8N1);
+    // wait for serial port to connect. Needed for native USB
+    while (!Serial);
+    #endif
     /// Initialize Joystick Library
     joystick.begin();
     
     /// Initialise joystick buttons
     for (auto &pin : arduinoPins) {
+        pin.initHardware();
         /// set the joystick buttons according to the initial pin status.
         /// the initial pin status is read in the pin-constructor.
-        setJoystickButtons(pin);
     }
+    #ifdef DEBUG
+    Serial.println("==setup() end==");
+    #endif
 }
 
-
 /***************************************************************************************************
- * @brief Endless loop of @em Arduino @em Leonardo / @em Sparkfun @em Micro @em Pro.
+ * @brief Endless loop of <em>Arduino Leonardo</em> / @em Sparkfun <em>Pro Micro</em>.
  * 
  * Read state (on, off) for all defined pins and
  * set the joystick buttons accordingly

@@ -4,7 +4,7 @@
 
 ## Introduction
 
-The Fuel-Selector-Switches by Sinan's [Etsy-Shop][shop] are driven by an *Sparkfun Micro Pro* device 
+The Fuel-Selector-Switches by Sinan's [Etsy-Shop][shop] are driven by an *Sparkfun Pro Micro* device 
 which is compatible to an *Arduino Leonardo* device.  
 The Arduino Leonardo is recognised by the PC operation system as a game controller with the name 
 *Arduino Leonardo*. Connected to this Leonardo are two "buttons" which are actuated by the two Fuel 
@@ -26,11 +26,16 @@ In the image below both Fuel Selector Switches are set to *off*.
    * **Fuel Selector Switch #1** is set to *on*: show **joystick button 0 as pressed**, otherwise as depressed,
    * **Fuel Selector Switch #1** is set to *off*: show **joystick button 1 as pressed**, otherwise as depressed,
    * **Fuel Selector Switch #2** is set to *on*: show **joystick button 2 as pressed**, otherwise as depressed,
-   * **Fuel Selector Switch #2** is set to *off*: show **joystick button 3 as pressed**, otherwise as depressed.
-   > Note: The internal joystick button count starts at zero (0), but in the Windows properties
-   > window the count starts with 1.
-6. The board in use is a *Sparkfun Micro Pro* which is compatible to the Arduino Leonardo.
+   * **Fuel Selector Switch #2** is set to *off*: show **joystick button 3 as pressed**, otherwise as depressed.  
+6. The board in use is a *Sparkfun Pro Micro* which is compatible to the Arduino Leonardo.
 7. Works with all (flight) simulators which can detect a joystick.
+
+> **Note:** The internal joystick button count starts at zero (0), but in the Windows properties
+> window the count starts with 1.
+
+> **Note:** Microsoft Windows does not recognise the pressed joystick button when the *Pro Micro* 
+        board is plugged into the USB port of the PC. To sync the pysical position of the switches
+        it is necessary to actuate one of the fuel selector switches. 
 
 ## Basic Algorithm
  
@@ -47,8 +52,8 @@ In the image below both Fuel Selector Switches are set to *off*.
 
 ## Wiring
 
-1. **Fuel Selector Switch #1** is connected to **Arduino Pin 3** of Micro Pro board.
-2. **Fuel Selector Switch #2** is connected to **Arduino Pin 2** of Micro Pro board. 
+1. **Fuel Selector Switch #1** is connected to **Arduino Pin 3** of Pro Micro board.
+2. **Fuel Selector Switch #2** is connected to **Arduino Pin 2** of Pro Micro board. 
 
 ## Dependencies
 
@@ -56,9 +61,9 @@ In the image below both Fuel Selector Switches are set to *off*.
    available on [Github][1].
 2. **DynamicHID library** by Arduino LLC, modified by Matthew Heironimus  
    included in 1.
-3. **Hardware**: Fuel Selector Switches connected to Micro Pro board:
-   * Fuel Selector Switch 1 --> Sparkfun Micro Pro pin 3
-   * Fuel Selector Switch 2 --> Sparkfun Micro Pro pin 2
+3. **Hardware**: Fuel Selector Switches connected to Pro Micro board:
+   * Fuel Selector Switch 1 --> Sparkfun Pro Micro pin 3
+   * Fuel Selector Switch 2 --> Sparkfun Pro Micro pin 2
 
 [1]: https://github.com/MHeironimus/ArduinoJoystickLibrary "Joystick Library by MHeironimus on Github"
 
